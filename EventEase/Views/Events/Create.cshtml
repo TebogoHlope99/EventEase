@@ -1,0 +1,89 @@
+﻿@model EventEase.Models.Event
+
+@{
+    ViewData["Title"] = "Create Event";
+}
+
+<h1>Create Event</h1>
+
+<h4>Event Details</h4>
+<hr />
+
+<div class="row">
+    <div class="col-md-6">
+        <form asp-action="Create">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+            <div class="form-group mb-3">
+                <label asp-for="EventName" class="control-label"></label>
+                <input asp-for="EventName" class="form-control" placeholder="Enter event name" />
+                <span asp-validation-for="EventName" class="text-danger"></span>
+            </div>
+
+            <div class="form-group mb-3">
+                <label asp-for="EventDate" class="control-label"></label>
+                <input asp-for="EventDate" class="form-control" type="datetime-local" />
+                <span asp-validation-for="EventDate" class="text-danger"></span>
+            </div>
+
+            <div class="form-group mb-3">
+                <label asp-for="Description" class="control-label"></label>
+                <textarea asp-for="Description" class="form-control" rows="3" placeholder="Enter event description"></textarea>
+                <span asp-validation-for="Description" class="text-danger"></span>
+            </div>
+
+            <div class="form-group mb-3">
+                <label asp-for="VenueId" class="control-label">Venue</label>
+                <select asp-for="VenueId" class="form-control" asp-items="ViewBag.Venues as SelectList">
+                    <option value="">-- Select Venue --</option>
+                </select>
+                <span asp-validation-for="VenueId" class="text-danger"></span>
+            </div>
+
+            <div class="form-group mb-3">
+                <label asp-for="ImageUrl" class="control-label">Image URL (Placeholder)</label>
+                <input asp-for="ImageUrl" class="form-control" placeholder="https://example.com/image.jpg" />
+                <span asp-validation-for="ImageUrl" class="text-danger"></span>
+                <small class="form-text text-muted">Enter a URL for the event image</small>
+            </div>
+
+            <div class="form-group mb-3">
+                <input type="submit" value="Create" class="btn btn-primary" />
+                <a asp-action="Index" class="btn btn-secondary">Back to List</a>
+            </div>
+        </form>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5>Preview</h5>
+            </div>
+            <div class="card-body">
+                <div id="imagePreview" class="text-center">
+                    <img id="previewImg" src="https://placehold.co/600x400/8b5cf6/white?text=Event+Preview" alt="Preview" class="img-fluid rounded" style="max-height: 200px;" />
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+
+    <script>
+        $(document).ready(function() {
+            // Live image preview
+            $('#ImageUrl').on('input', function() {
+                var url = $(this).val();
+                if (url) {
+                    $('#previewImg').attr('src', url);
+                } else {
+                    $('#previewImg').attr('src', 'https://placehold.co/600x400/8b5cf6/white?text=Event+Preview');
+                }
+            });
+        });
+    </script>
+}

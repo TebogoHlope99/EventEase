@@ -1,0 +1,22 @@
+﻿<div class="loading-spinner" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.8); z-index: 9999; justify-content: center; align-items: center;">
+    <div class="spinner-border text-primary" style="width: 5rem; height: 5rem;" role="status">
+        <span class="visually-hidden">Loading...</span>
+    </div>
+</div>
+
+<script>
+    function showLoading() {
+        document.querySelector('.loading-spinner').style.display = 'flex';
+    }
+
+    function hideLoading() {
+        document.querySelector('.loading-spinner').style.display = 'none';
+    }
+
+    // Show loading on form submissions
+    document.querySelectorAll('form').forEach(form => {
+        form.addEventListener('submit', function() {
+            showLoading();
+        });
+    });
+</script>

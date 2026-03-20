@@ -1,0 +1,123 @@
+﻿@model EventEase.Models.Booking
+
+@{
+    ViewData["Title"] = "Create Booking";
+}
+
+<h1>Create Booking</h1>
+
+<h4>Booking Details</h4>
+<hr />
+
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger">
+        @TempData["ErrorMessage"]
+    </div>
+}
+
+<div class="row">
+    <div class="col-md-6">
+        <form asp-action="Create">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+            <div class="form-group mb-3">
+                <label asp-for="EventId" class="control-label">Event</label>
+                <select asp-for="EventId" class="form-control" asp-items="ViewBag.Events as SelectList" id="EventSelect">
+                    <option value="">-- Select Event --</option>
+                </select>
+                <span asp-validation-for="EventId" class="text-danger"></span>
+            </div>
+
+            <div class="form-group mb-3">
+                <label asp-for="VenueId" class="control-label">Venue</label>
+                <select asp-for="VenueId" class="form-control" asp-items="ViewBag.Venues as SelectList" id="VenueSelect">
+                    <option value="">-- Select Venue --</option>
+                </select>
+                <span asp-validation-for="VenueId" class="text-danger"></span>
+            </div>
+
+            <div class="form-group mb-3">
+                <label asp-for="BookingDate" class="control-label"></label>
+                <input asp-for="BookingDate" class="form-control" type="date" id="BookingDate" />
+                <span asp-validation-for="BookingDate" class="text-danger"></span>
+                <small class="form-text text-muted">Select the date for this booking</small>
+            </div>
+
+            <div class="form-group mb-3">
+                <div class="alert alert-info" id="availabilityMessage" style="display: none;">
+                    Checking availability...
+                </div>
+            </div>
+
+            <div class="form-group mb-3">
+                <input type="submit" value="Create" class="btn btn-primary" id="submitBtn" />
+                <a asp-action="Index" class="btn btn-secondary">Back to List</a>
+            </div>
+        </form>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5>Booking Information</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>Note:</strong> Each venue can only have one booking per day.</p>
+                <p>The system will prevent double bookings automatically.</p>
+                <hr />
+                <div id="selectedInfo">
+                    <p><strong>Selected Event:</strong> <span id="selectedEvent">None</span></p>
+                    <p><strong>Selected Venue:</strong> <span id="selectedVenue">None</span></p>
+                    <p><strong>Selected Date:</strong> <span id="selectedDate">None</span></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+
+    <script>
+        $(document).ready(function() {
+            // Update selected info
+            $('#EventSelect').change(function() {
+                var text = $(this).find('option:selected').text();
+                $('#selectedEvent').text(text || 'None');
+            });
+
+            $('#VenueSelect').change(function() {
+                var text = $(this).find('option:selected').text();
+                $('#selectedVenue').text(text || 'None');
+            });
+
+            $('#BookingDate').change(function() {
+                var date = $(this).val();
+                $('#selectedDate').text(date || 'None');
+
+                // Check availability
+                checkAvailability();
+            });
+
+            function checkAvailability() {
+                var venueId = $('#VenueSelect').val();
+                var date = $('#BookingDate').val();
+
+                if (venueId && date) {
+                    $('#availabilityMessage').show().removeClass('alert-success alert-danger').addClass('alert-info').text('Checking availability...');
+
+                    // Simulate availability check (in real app, would call server)
+                    setTimeout(function() {
+                        // This is just UI feedback - actual validation happens on server
+                        $('#availabilityMessage').removeClass('alert-info').addClass('alert-warning').text('Note: Final validation will occur when submitting.');
+                    }, 500);
+                } else {
+                    $('#availabilityMessage').hide();
+                }
+            }
+        });
+    </script>
+}

@@ -1,0 +1,154 @@
+﻿@{
+    ViewData["Title"] = "Home";
+}
+
+<div class="text-center">
+    <h1 class="display-4">Welcome to EventEase</h1>
+    <p class="lead">Your premier venue booking management system</p>
+</div>
+
+<div class="row mt-5">
+    <div class="col-md-4">
+        <div class="stat-card">
+            <i class="bi bi-building"></i>
+            <h3>@ViewBag.VenueCount</h3>
+            <p>Total Venues</p>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="stat-card" style="background: linear-gradient(135deg, #4cc9f0, #2dc9ff);">
+            <i class="bi bi-calendar-event"></i>
+            <h3>@ViewBag.EventCount</h3>
+            <p>Total Events</p>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="stat-card" style="background: linear-gradient(135deg, #f72585, #b5179e);">
+            <i class="bi bi-bookmark-check"></i>
+            <h3>@ViewBag.BookingCount</h3>
+            <p>Active Bookings</p>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-5">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-building me-2"></i>Recent Venues</h5>
+            </div>
+            <div class="card-body">
+                @if (ViewBag.RecentVenues != null)
+                {
+                    <div class="list-group">
+                        @foreach (var venue in ViewBag.RecentVenues)
+                        {
+                            <a href="@Url.Action("Details", "Venues", new { id = venue.VenueId })" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>@venue.VenueName</strong>
+                                    <br />
+                                    <small class="text-muted">@venue.Location</small>
+                                </div>
+                                <span class="badge bg-primary">Capacity: @venue.Capacity</span>
+                            </a>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-calendar-event me-2"></i>Upcoming Events</h5>
+            </div>
+            <div class="card-body">
+                @if (ViewBag.UpcomingEvents != null)
+                {
+                    <div class="list-group">
+                        @foreach (var eventItem in ViewBag.UpcomingEvents)
+                        {
+                            <a href="@Url.Action("Details", "Events", new { id = eventItem.EventId })" class="list-group-item list-group-item-action">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1">@eventItem.EventName</h6>
+                                    <small>@eventItem.EventDate.ToString("MMM dd, yyyy")</small>
+                                </div>
+                                <p class="mb-1">@(eventItem.Description?.Length > 50 ? eventItem.Description.Substring(0, 50) + "..." : eventItem.Description)</p>
+                                <small class="text-muted">@eventItem.Venue?.VenueName</small>
+                            </a>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-5">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-bookmark-check me-2"></i>Recent Bookings</h5>
+            </div>
+            <div class="card-body">
+                @if (ViewBag.RecentBookings != null)
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Booking ID</th>
+                                    <th>Event</th>
+                                    <th>Venue</th>
+                                    <th>Booking Date</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var booking in ViewBag.RecentBookings)
+                                {
+                                    <tr onclick="location.href='@Url.Action("Details", "Bookings", new { id = booking.BookingId })'" style="cursor: pointer;">
+                                        <td><strong>#@booking.BookingId</strong></td>
+                                        <td>@booking.Event?.EventName</td>
+                                        <td>@booking.Venue?.VenueName</td>
+                                        <td>@booking.BookingDate.ToString("yyyy-MM-dd")</td>
+                                        <td>
+                                            @if (booking.BookingDate >= DateTime.Now)
+                                            {
+                                                <span class="badge bg-success">Upcoming</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-secondary">Past</span>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-5">
+    <div class="col-12 text-center">
+        <div class="card bg-light">
+            <div class="card-body">
+                <h4 class="card-title">Quick Actions</h4>
+                <a asp-controller="Venues" asp-action="Create" class="btn btn-primary m-2">
+                    <i class="bi bi-plus-circle"></i> Add Venue
+                </a>
+                <a asp-controller="Events" asp-action="Create" class="btn btn-success m-2">
+                    <i class="bi bi-plus-circle"></i> Add Event
+                </a>
+                <a asp-controller="Bookings" asp-action="Create" class="btn btn-info m-2">
+                    <i class="bi bi-plus-circle"></i> Create Booking
+                </a>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,86 @@
+﻿@model EventEase.Models.Venue
+
+@{
+    ViewData["Title"] = "Create Venue";
+}
+
+<h1>Create Venue</h1>
+
+<h4>Venue Details</h4>
+<hr />
+
+<div class="row">
+    <div class="col-md-6">
+        <form asp-action="Create">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+            <div class="form-group mb-3">
+                <label asp-for="VenueName" class="control-label"></label>
+                <input asp-for="VenueName" class="form-control" placeholder="Enter venue name" />
+                <span asp-validation-for="VenueName" class="text-danger"></span>
+            </div>
+
+            <div class="form-group mb-3">
+                <label asp-for="Location" class="control-label"></label>
+                <input asp-for="Location" class="form-control" placeholder="Enter full address" />
+                <span asp-validation-for="Location" class="text-danger"></span>
+            </div>
+
+            <div class="form-group mb-3">
+                <label asp-for="Capacity" class="control-label"></label>
+                <input asp-for="Capacity" class="form-control" type="number" min="1" placeholder="Enter maximum capacity" />
+                <span asp-validation-for="Capacity" class="text-danger"></span>
+            </div>
+
+            <div class="form-group mb-3">
+                <label asp-for="ImageUrl" class="control-label">Image URL (Placeholder)</label>
+                <input asp-for="ImageUrl" class="form-control" placeholder="https://example.com/image.jpg" />
+                <span asp-validation-for="ImageUrl" class="text-danger"></span>
+                <small class="form-text text-muted">Enter a URL for the venue image (placeholder images accepted)</small>
+            </div>
+
+            <div class="form-group mb-3">
+                <input type="submit" value="Create" class="btn btn-primary" />
+                <a asp-action="Index" class="btn btn-secondary">Back to List</a>
+            </div>
+        </form>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5>Preview</h5>
+            </div>
+            <div class="card-body">
+                <div id="imagePreview" class="text-center">
+                    <img id="previewImg" src="https://placehold.co/600x400/3b82f6/white?text=Venue+Preview" alt="Preview" class="img-fluid rounded" style="max-height: 200px;" />
+                </div>
+                <p class="mt-2"><strong>Note:</strong> You can use placeholder URLs like:</p>
+                <ul class="small">
+                    <li>https://placehold.co/600x400/3b82f6/white?text=Venue+Name</li>
+                    <li>https://placehold.co/600x400/10b981/white?text=Your+Text</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+
+    <script>
+        $(document).ready(function() {
+            // Live image preview
+            $('#ImageUrl').on('input', function() {
+                var url = $(this).val();
+                if (url) {
+                    $('#previewImg').attr('src', url);
+                } else {
+                    $('#previewImg').attr('src', 'https://placehold.co/600x400/3b82f6/white?text=Venue+Preview');
+                }
+            });
+        });
+    </script>
+}
