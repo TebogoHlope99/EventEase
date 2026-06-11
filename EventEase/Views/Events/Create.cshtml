@@ -6,12 +6,17 @@
 
 <h1>Create Event</h1>
 
-<h4>Event Details</h4>
-<hr />
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle"></i> @TempData["ErrorMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
 
 <div class="row">
     <div class="col-md-6">
-        <form asp-action="Create">
+        <form asp-action="Create" enctype="multipart/form-data" method="post">
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
 
             <div class="form-group mb-3">
@@ -32,24 +37,39 @@
                 <span asp-validation-for="Description" class="text-danger"></span>
             </div>
 
+            <!-- Event Type Dropdown - ADD THIS -->
+            <div class="form-group mb-3">
+                <label asp-for="EventTypeId" class="control-label">Event Type</label>
+                <select asp-for="EventTypeId" class="form-control" asp-items="ViewBag.EventTypes">
+                    <option value="">-- Select Event Type --</option>
+                </select>
+                <span asp-validation-for="EventTypeId" class="text-danger"></span>
+            </div>
+
             <div class="form-group mb-3">
                 <label asp-for="VenueId" class="control-label">Venue</label>
-                <select asp-for="VenueId" class="form-control" asp-items="ViewBag.Venues as SelectList">
+                <select asp-for="VenueId" class="form-control" asp-items="ViewBag.Venues">
                     <option value="">-- Select Venue --</option>
                 </select>
                 <span asp-validation-for="VenueId" class="text-danger"></span>
             </div>
 
             <div class="form-group mb-3">
-                <label asp-for="ImageUrl" class="control-label">Image URL (Placeholder)</label>
-                <input asp-for="ImageUrl" class="form-control" placeholder="https://example.com/image.jpg" />
-                <span asp-validation-for="ImageUrl" class="text-danger"></span>
-                <small class="form-text text-muted">Enter a URL for the event image</small>
+                <label class="control-label">Event Image</label>
+                <input type="file" name="imageFile" class="form-control" accept="image/jpeg,image/png,image/gif" />
+                <small class="form-text text-muted">
+                    <i class="bi bi-info-circle"></i>
+                    Supported formats: JPG, PNG, GIF (max 5MB)
+                </small>
             </div>
 
             <div class="form-group mb-3">
-                <input type="submit" value="Create" class="btn btn-primary" />
-                <a asp-action="Index" class="btn btn-secondary">Back to List</a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-save"></i> Create
+                </button>
+                <a asp-action="Index" class="btn btn-secondary">
+                    <i class="bi bi-arrow-left"></i> Back to List
+                </a>
             </div>
         </form>
     </div>
@@ -57,11 +77,13 @@
     <div class="col-md-6">
         <div class="card">
             <div class="card-header">
-                <h5>Preview</h5>
+                <h5>Image Preview</h5>
             </div>
-            <div class="card-body">
-                <div id="imagePreview" class="text-center">
-                    <img id="previewImg" src="https://placehold.co/600x400/8b5cf6/white?text=Event+Preview" alt="Preview" class="img-fluid rounded" style="max-height: 200px;" />
+            <div class="card-body text-center">
+                <img id="preview" src="#" alt="Preview" style="max-width: 100%; max-height: 300px; display: none;" />
+                <div id="noPreview" class="text-muted">
+                    <i class="bi bi-image" style="font-size: 50px;"></i>
+                    <p>Select an image to preview</p>
                 </div>
             </div>
         </div>
@@ -74,16 +96,24 @@
     }
 
     <script>
-        $(document).ready(function() {
-            // Live image preview
-            $('#ImageUrl').on('input', function() {
-                var url = $(this).val();
-                if (url) {
-                    $('#previewImg').attr('src', url);
-                } else {
-                    $('#previewImg').attr('src', 'https://placehold.co/600x400/8b5cf6/white?text=Event+Preview');
+        // Image preview
+        document.querySelector('input[type="file"]').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            const preview = document.getElementById('preview');
+            const noPreview = document.getElementById('noPreview');
+
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    preview.src = event.target.result;
+                    preview.style.display = 'block';
+                    noPreview.style.display = 'none';
                 }
-            });
+                reader.readAsDataURL(file);
+            } else {
+                preview.style.display = 'none';
+                noPreview.style.display = 'block';
+            }
         });
     </script>
 }

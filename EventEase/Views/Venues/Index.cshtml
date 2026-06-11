@@ -1,44 +1,548 @@
-﻿@model IEnumerable<EventEase.Models.Venue>
+﻿@using EventEase.Data
+@model PaginatedList<EventEase.Models.Venue>
 
 @{
     ViewData["Title"] = "Venues";
+    var searchString = ViewData["CurrentFilter"] as string;
+    var minCapacity = ViewData["CurrentMinCapacity"] as int?;
+    var maxCapacity = ViewData["CurrentMaxCapacity"] as int?;
+    var location = ViewData["CurrentLocation"] as string;
+    var availability = ViewData["CurrentAvailability"] as string;
+    var status = ViewData["CurrentStatus"] as string;
+    var minBookings = ViewData["CurrentMinBookings"] as int?;
+    var maxBookings = ViewData["CurrentMaxBookings"] as int?;
 }
 
-<h1>Venues</h1>
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1><i class="bi bi-building"></i> Venues</h1>
+        <a asp-action="Create" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Create New Venue
+        </a>
+    </div>
 
-<p>
-    <a asp-action="Create" class="btn btn-primary">Create New Venue</a>
-</p>
+    <!-- Advanced Filter Panel -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0"><i class="bi bi-funnel"></i> Filter Venues</h5>
+        </div>
+        <div class="card-body">
+            <!-- Changed to div - no automatic submission -->
+            <div id="filterForm">
+                <!-- Search Row -->
+                <div class="row g-3 mb-3">
+                    <div class="col-md-12">
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-search"></i></span>
+                            <input type="text" name="searchString" class="form-control"
+                                   placeholder="Search by venue name or location..."
+                                   value="@searchString" id="searchInput">
+                        </div>
+                    </div>
+                </div>
 
-<table class="table table-striped table-hover">
-    <thead>
-        <tr>
-            <th>Image</th>
-            <th>@Html.DisplayNameFor(model => model.VenueName)</th>
-            <th>@Html.DisplayNameFor(model => model.Location)</th>
-            <th>@Html.DisplayNameFor(model => model.Capacity)</th>
-            <th>Actions</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var item in Model)
-        {
-            <tr>
-                <td>
-                    @if (!string.IsNullOrEmpty(item.ImageUrl))
+                <!-- Filter Row 1 -->
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label"><i class="bi bi-people"></i> Min Capacity</label>
+                        <input type="number" name="minCapacity" class="form-control"
+                               placeholder="Min" value="@minCapacity" id="minCapacityInput" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label"><i class="bi bi-people"></i> Max Capacity</label>
+                        <input type="number" name="maxCapacity" class="form-control"
+                               placeholder="Max" value="@maxCapacity" id="maxCapacityInput" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label"><i class="bi bi-geo-alt"></i> Location</label>
+                        <select name="location" class="form-select" asp-items="ViewBag.Locations" id="locationSelect">
+                            <option value="">-- All Locations --</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label"><i class="bi bi-check-circle"></i> Availability</label>
+                        <select name="availability" class="form-select" id="availabilitySelect">
+                            <option value="">-- All Venues --</option>
+                            <option value="available" selected="@(availability == "available")">✅ Available</option>
+                            <option value="unavailable" selected="@(availability == "unavailable")">❌ Unavailable</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Filter Row 2 -->
+                <div class="row g-3 mt-2">
+                    <div class="col-md-3">
+                        <label class="form-label"><i class="bi bi-calendar-check"></i> Booking Status</label>
+                        <select name="status" class="form-select" id="statusSelect">
+                            <option value="">-- All Venues --</option>
+                            <option value="hasBookings" selected="@(status == "hasBookings")">📅 Has Bookings</option>
+                            <option value="noBookings" selected="@(status == "noBookings")">📅 No Bookings</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label"><i class="bi bi-bookmark"></i> Min Bookings</label>
+                        <input type="number" name="minBookings" class="form-control"
+                               placeholder="Min" value="@minBookings" id="minBookingsInput" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label"><i class="bi bi-bookmark"></i> Max Bookings</label>
+                        <input type="number" name="maxBookings" class="form-control"
+                               placeholder="Max" value="@maxBookings" id="maxBookingsInput" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label"><i class="bi bi-arrow-down-up"></i> Sort By</label>
+                        <select name="sortOrder" class="form-select" id="sortOrderSelect">
+                            <option value="name">Name (A-Z)</option>
+                            <option value="name_desc">Name (Z-A)</option>
+                            <option value="capacity">Capacity (Low to High)</option>
+                            <option value="capacity_desc">Capacity (High to Low)</option>
+                            <option value="location">Location (A-Z)</option>
+                            <option value="location_desc">Location (Z-A)</option>
+                            <option value="created">Created (Oldest First)</option>
+                            <option value="created_desc">Created (Newest First)</option>
+                            <option value="bookings">Bookings (Low to High)</option>
+                            <option value="bookings_desc">Bookings (High to Low)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Filter Actions Row -->
+                <div class="row g-3 mt-3">
+                    <div class="col-md-12 d-flex align-items-end">
+                        <button type="button" id="applyFiltersBtn" class="btn btn-primary me-2">
+                            <i class="bi bi-funnel"></i> Apply Filters
+                        </button>
+                        <button type="button" id="clearFiltersBtn" class="btn btn-secondary me-2">
+                            <i class="bi bi-eraser"></i> Clear Filters
+                        </button>
+                        <button type="button" id="saveFilterBtn" class="btn btn-outline-success me-2">
+                            <i class="bi bi-bookmark-plus"></i> Save Current Filter
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
+                            <i class="bi bi-clock-history"></i> Saved Filters
+                        </button>
+                        <ul class="dropdown-menu" id="savedFiltersList">
+                            <li><a class="dropdown-item text-muted" href="#">No saved filters</a></li>
+                        </ul>
+                        <button type="button" id="clearSavedFilters" class="btn btn-outline-danger ms-2" title="Clear all saved filters">
+                            <i class="bi bi-trash"></i> Clear All
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-white bg-primary">
+                <div class="card-body">
+                    <h5 class="card-title">Total Venues</h5>
+                    <h2 class="mb-0">@ViewBag.TotalCount</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-success">
+                <div class="card-body">
+                    <h5 class="card-title">Available</h5>
+                    <h2 class="mb-0">@ViewBag.AvailableCount</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-danger">
+                <div class="card-body">
+                    <h5 class="card-title">Unavailable</h5>
+                    <h2 class="mb-0">@ViewBag.UnavailableCount</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-info">
+                <div class="card-body">
+                    <h5 class="card-title">Avg Capacity</h5>
+                    <h2 class="mb-0">@ViewBag.AvgCapacity</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Active Filters Display -->
+    @if (!string.IsNullOrEmpty(searchString) || minCapacity.HasValue || maxCapacity.HasValue || !string.IsNullOrEmpty(location) || !string.IsNullOrEmpty(availability) || !string.IsNullOrEmpty(status) || minBookings.HasValue || maxBookings.HasValue)
+    {
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle"></i> <strong>Active Filters:</strong>
+            <div class="mt-2">
+                @if (!string.IsNullOrEmpty(searchString))
+                {
+                    <span class="badge bg-primary me-1 filter-badge">🔍 Search: @searchString <a href="#" class="text-white ms-1 remove-filter" data-field="searchString">✖</a></span>
+                }
+                @if (minCapacity.HasValue)
+                {
+                    <span class="badge bg-primary me-1 filter-badge">📊 Min Capacity: @minCapacity <a href="#" class="text-white ms-1 remove-filter" data-field="minCapacity">✖</a></span>
+                }
+                @if (maxCapacity.HasValue)
+                {
+                    <span class="badge bg-primary me-1 filter-badge">📊 Max Capacity: @maxCapacity <a href="#" class="text-white ms-1 remove-filter" data-field="maxCapacity">✖</a></span>
+                }
+                @if (!string.IsNullOrEmpty(location))
+                {
+                    <span class="badge bg-primary me-1 filter-badge">📍 Location: @location <a href="#" class="text-white ms-1 remove-filter" data-field="location">✖</a></span>
+                }
+                @if (!string.IsNullOrEmpty(availability))
+                {
+                    <span class="badge bg-primary me-1 filter-badge">✅ Status: @(availability == "available" ? "Available" : "Unavailable") <a href="#" class="text-white ms-1 remove-filter" data-field="availability">✖</a></span>
+                }
+                @if (!string.IsNullOrEmpty(status))
+                {
+                    <span class="badge bg-primary me-1 filter-badge">📅 Booking Status: @(status == "hasBookings" ? "Has Bookings" : "No Bookings") <a href="#" class="text-white ms-1 remove-filter" data-field="status">✖</a></span>
+                }
+                @if (minBookings.HasValue)
+                {
+                    <span class="badge bg-primary me-1 filter-badge">📖 Min Bookings: @minBookings <a href="#" class="text-white ms-1 remove-filter" data-field="minBookings">✖</a></span>
+                }
+                @if (maxBookings.HasValue)
+                {
+                    <span class="badge bg-primary me-1 filter-badge">📖 Max Bookings: @maxBookings <a href="#" class="text-white ms-1 remove-filter" data-field="maxBookings">✖</a></span>
+                }
+            </div>
+        </div>
+    }
+
+    <!-- Venues Table -->
+    <div class="table-responsive">
+        <table class="table table-striped table-hover">
+            <thead class="table-dark">
+                <tr>
+                    <th>Image</th>
+                    <th>Venue Name</th>
+                    <th>Location</th>
+                    <th>Capacity</th>
+                    <th>Bookings</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model)
+                {
+                    <tr>
+                        <td>
+                            @if (!string.IsNullOrEmpty(item.ImageUrl))
+                            {
+                                <img src="@item.ImageUrl" alt="@item.VenueName" style="width: 50px; height: 50px; object-fit: cover; border-radius: 8px;" />
+                            }
+                            else
+                            {
+                                <div class="bg-light d-flex align-items-center justify-content-center rounded" style="width: 50px; height: 50px;">
+                                    <i class="bi bi-building fs-4 text-muted"></i>
+                                </div>
+                            }
+                        </td>
+                        <td><strong>@item.VenueName</strong></td>
+                        <td>@item.Location</td>
+                        <td><span class="badge bg-info">@item.Capacity</span></td>
+                        <td><span class="badge bg-secondary">@(item.Bookings?.Count ?? 0)</span></td>
+                        <td>
+                            @if (item.IsAvailable)
+                            {
+                                <span class="badge bg-success">Available</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-danger">Unavailable</span>
+                            }
+                        </td>
+                        <td>
+                            <div class="btn-group" role="group">
+                                <a asp-action="Edit" asp-route-id="@item.VenueId" class="btn btn-sm btn-warning" title="Edit">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <a asp-action="Details" asp-route-id="@item.VenueId" class="btn btn-sm btn-info" title="Details">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                <a asp-action="Delete" asp-route-id="@item.VenueId" class="btn btn-sm btn-danger" title="Delete">
+                                    <i class="bi bi-trash"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    @if (Model.TotalPages > 1)
+    {
+        <nav aria-label="Page navigation">
+            <ul class="pagination justify-content-center">
+                @if (Model.HasPreviousPage)
+                {
+                    <li class="page-item">
+                        <a class="page-link" asp-action="Index"
+                           asp-route-searchString="@searchString"
+                           asp-route-minCapacity="@minCapacity"
+                           asp-route-maxCapacity="@maxCapacity"
+                           asp-route-location="@location"
+                           asp-route-availability="@availability"
+                           asp-route-status="@status"
+                           asp-route-minBookings="@minBookings"
+                           asp-route-maxBookings="@maxBookings"
+                           asp-route-pageNumber="@(Model.PageIndex - 1)">Previous</a>
+                    </li>
+                }
+                else
+                {
+                    <li class="page-item disabled"><span class="page-link">Previous</span></li>
+                }
+
+                @for (int i = 1; i <= Model.TotalPages; i++)
+                {
+                    if (i == Model.PageIndex)
                     {
-                        <img src="@item.ImageUrl" alt="@item.VenueName" style="max-width: 100px; max-height: 100px;" />
+                        <li class="page-item active"><span class="page-link">@i</span></li>
                     }
-                </td>
-                <td>@Html.DisplayFor(modelItem => item.VenueName)</td>
-                <td>@Html.DisplayFor(modelItem => item.Location)</td>
-                <td>@Html.DisplayFor(modelItem => item.Capacity)</td>
-                <td>
-                    <a asp-action="Edit" asp-route-id="@item.VenueId" class="btn btn-sm btn-warning">Edit</a>
-                    <a asp-action="Details" asp-route-id="@item.VenueId" class="btn btn-sm btn-info">Details</a>
-                    <a asp-action="Delete" asp-route-id="@item.VenueId" class="btn btn-sm btn-danger">Delete</a>
-                </td>
-            </tr>
-        }
-    </tbody>
-</table>
+                    else
+                    {
+                        <li class="page-item">
+                            <a class="page-link" asp-action="Index"
+                               asp-route-searchString="@searchString"
+                               asp-route-minCapacity="@minCapacity"
+                               asp-route-maxCapacity="@maxCapacity"
+                               asp-route-location="@location"
+                               asp-route-availability="@availability"
+                               asp-route-status="@status"
+                               asp-route-minBookings="@minBookings"
+                               asp-route-maxBookings="@maxBookings"
+                               asp-route-pageNumber="@i">@i</a>
+                        </li>
+                    }
+                }
+
+                @if (Model.HasNextPage)
+                {
+                    <li class="page-item">
+                        <a class="page-link" asp-action="Index"
+                           asp-route-searchString="@searchString"
+                           asp-route-minCapacity="@minCapacity"
+                           asp-route-maxCapacity="@maxCapacity"
+                           asp-route-location="@location"
+                           asp-route-availability="@availability"
+                           asp-route-status="@status"
+                           asp-route-minBookings="@minBookings"
+                           asp-route-maxBookings="@maxBookings"
+                           asp-route-pageNumber="@(Model.PageIndex + 1)">Next</a>
+                    </li>
+                }
+                else
+                {
+                    <li class="page-item disabled"><span class="page-link">Next</span></li>
+                }
+            </ul>
+        </nav>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Venues filter script initialized');
+
+            // Get all form elements
+            const searchInput = document.getElementById('searchInput');
+            const minCapacityInput = document.getElementById('minCapacityInput');
+            const maxCapacityInput = document.getElementById('maxCapacityInput');
+            const locationSelect = document.getElementById('locationSelect');
+            const availabilitySelect = document.getElementById('availabilitySelect');
+            const statusSelect = document.getElementById('statusSelect');
+            const minBookingsInput = document.getElementById('minBookingsInput');
+            const maxBookingsInput = document.getElementById('maxBookingsInput');
+            const sortOrderSelect = document.getElementById('sortOrderSelect');
+
+            const applyFiltersBtn = document.getElementById('applyFiltersBtn');
+            const clearFiltersBtn = document.getElementById('clearFiltersBtn');
+            const saveFilterBtn = document.getElementById('saveFilterBtn');
+            const clearSavedFiltersBtn = document.getElementById('clearSavedFiltersBtn');
+
+            // Build URL with current filters
+            function buildFilterUrl() {
+                const params = new URLSearchParams();
+
+                if (searchInput && searchInput.value) params.append('searchString', searchInput.value);
+                if (minCapacityInput && minCapacityInput.value) params.append('minCapacity', minCapacityInput.value);
+                if (maxCapacityInput && maxCapacityInput.value) params.append('maxCapacity', maxCapacityInput.value);
+                if (locationSelect && locationSelect.value && locationSelect.value !== '') params.append('location', locationSelect.value);
+                if (availabilitySelect && availabilitySelect.value && availabilitySelect.value !== '') params.append('availability', availabilitySelect.value);
+                if (statusSelect && statusSelect.value && statusSelect.value !== '') params.append('status', statusSelect.value);
+                if (minBookingsInput && minBookingsInput.value) params.append('minBookings', minBookingsInput.value);
+                if (maxBookingsInput && maxBookingsInput.value) params.append('maxBookings', maxBookingsInput.value);
+                if (sortOrderSelect && sortOrderSelect.value && sortOrderSelect.value !== 'name') params.append('sortOrder', sortOrderSelect.value);
+
+                const url = window.location.pathname + (params.toString() ? '?' + params.toString() : '');
+                console.log('Navigating to:', url);
+                return url;
+            }
+
+            // Apply Filters
+            if (applyFiltersBtn) {
+                applyFiltersBtn.addEventListener('click', function() {
+                    console.log('Apply Filters clicked');
+                    window.location.href = buildFilterUrl();
+                });
+            }
+
+            // Clear Filters
+            if (clearFiltersBtn) {
+                clearFiltersBtn.addEventListener('click', function() {
+                    console.log('Clear Filters clicked');
+                    window.location.href = window.location.pathname;
+                });
+            }
+
+            // Toast function
+            function showToast(message, type) {
+                const existingToasts = document.querySelectorAll('.custom-toast');
+                existingToasts.forEach(toast => toast.remove());
+
+                const colors = { success: '#198754', error: '#dc3545', warning: '#ffc107', info: '#0dcaf0' };
+                const icons = { success: '✓', error: '✗', warning: '⚠', info: 'ℹ' };
+
+                const bgColor = colors[type] || colors.info;
+                const textColor = type === 'warning' ? '#000000' : '#ffffff';
+                const icon = icons[type] || icons.info;
+
+                const toast = document.createElement('div');
+                toast.className = 'custom-toast';
+                toast.style.cssText = `
+                    position: fixed; bottom: 20px; right: 20px; padding: 15px 20px;
+                    background-color: ${bgColor}; color: ${textColor}; z-index: 9999;
+                    min-width: 280px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                    cursor: pointer; font-weight: 500;
+                `;
+                toast.innerHTML = `
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <span style="font-size: 20px; font-weight: bold;">${icon}</span>
+                        <span style="flex: 1;">${message}</span>
+                        <button style="background: none; border: none; color: inherit; font-size: 20px; cursor: pointer;" onclick="this.closest('.custom-toast').remove()">&times;</button>
+                    </div>
+                `;
+                document.body.appendChild(toast);
+                setTimeout(() => toast.remove(), 3000);
+                toast.addEventListener('click', () => toast.remove());
+            }
+
+            // Get current filter values
+            function getCurrentFilters() {
+                return {
+                    searchString: searchInput ? searchInput.value : '',
+                    minCapacity: minCapacityInput ? minCapacityInput.value : '',
+                    maxCapacity: maxCapacityInput ? maxCapacityInput.value : '',
+                    location: locationSelect ? locationSelect.value : '',
+                    availability: availabilitySelect ? availabilitySelect.value : '',
+                    status: statusSelect ? statusSelect.value : '',
+                    minBookings: minBookingsInput ? minBookingsInput.value : '',
+                    maxBookings: maxBookingsInput ? maxBookingsInput.value : '',
+                    sortOrder: sortOrderSelect ? sortOrderSelect.value : '',
+                    savedAt: new Date().toLocaleString()
+                };
+            }
+
+            // Update saved filters list
+            function updateSavedFiltersList() {
+                const savedFilters = JSON.parse(localStorage.getItem('venueFilters') || '[]');
+                const listContainer = document.getElementById('savedFiltersList');
+                if (!listContainer) return;
+
+                let listHtml = '';
+                if (savedFilters.length === 0) {
+                    listHtml = '<li><a class="dropdown-item text-muted" href="#"><i class="bi bi-info-circle"></i> No saved filters</a></li>';
+                } else {
+                    savedFilters.forEach(function(filter, index) {
+                        const description = [];
+                        if (filter.searchString) description.push('🔍 ' + filter.searchString.substring(0, 25));
+                        if (filter.minCapacity) description.push('Min Cap: ' + filter.minCapacity);
+                        if (filter.maxCapacity) description.push('Max Cap: ' + filter.maxCapacity);
+                        if (filter.location) description.push('📍 ' + filter.location);
+                        if (filter.availability === 'available') description.push('✅ Available');
+                        if (filter.availability === 'unavailable') description.push('❌ Unavailable');
+                        if (filter.status === 'hasBookings') description.push('📅 Has Bookings');
+                        if (filter.status === 'noBookings') description.push('📅 No Bookings');
+                        if (description.length === 0) description.push('📋 All Venues');
+
+                        let displayText = description.join(', ');
+                        if (displayText.length > 55) displayText = displayText.substring(0, 52) + '...';
+
+                        listHtml += '<li><a class="dropdown-item" href="#" data-filter-index="' + index + '">' +
+                            '<div><i class="bi bi-bookmark-check-fill text-success me-1"></i> ' + displayText + '</div>' +
+                            '<small class="text-muted">📅 ' + (filter.savedAt || 'Unknown') + '</small></a></li>';
+                    });
+                }
+                listContainer.innerHTML = listHtml;
+
+                document.querySelectorAll('#savedFiltersList a[data-filter-index]').forEach(link => {
+                    link.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        const index = parseInt(this.getAttribute('data-filter-index'));
+                        const filter = savedFilters[index];
+                        if (!filter) return;
+
+                        if (searchInput) searchInput.value = filter.searchString || '';
+                        if (minCapacityInput) minCapacityInput.value = filter.minCapacity || '';
+                        if (maxCapacityInput) maxCapacityInput.value = filter.maxCapacity || '';
+                        if (locationSelect) locationSelect.value = filter.location || '';
+                        if (availabilitySelect) availabilitySelect.value = filter.availability || '';
+                        if (statusSelect) statusSelect.value = filter.status || '';
+                        if (minBookingsInput) minBookingsInput.value = filter.minBookings || '';
+                        if (maxBookingsInput) maxBookingsInput.value = filter.maxBookings || '';
+                        if (sortOrderSelect) sortOrderSelect.value = filter.sortOrder || 'name';
+
+                        showToast('Filter loaded! Click Apply Filters to search.', 'success');
+                    });
+                });
+            }
+
+            // Save filter
+            if (saveFilterBtn) {
+                saveFilterBtn.addEventListener('click', function() {
+                    const filters = getCurrentFilters();
+                    const hasFilters = filters.searchString || filters.minCapacity || filters.maxCapacity ||
+                                      filters.location || filters.availability || filters.status ||
+                                      filters.minBookings || filters.maxBookings;
+
+                    if (!hasFilters) {
+                        showToast('No filters to save. Apply some filters first.', 'warning');
+                        return;
+                    }
+
+                    try {
+                        let savedFilters = JSON.parse(localStorage.getItem('venueFilters') || '[]');
+                        savedFilters.unshift(filters);
+                        if (savedFilters.length > 10) savedFilters.pop();
+                        localStorage.setItem('venueFilters', JSON.stringify(savedFilters));
+                        updateSavedFiltersList();
+                        showToast('Filter saved successfully!', 'success');
+                    } catch(error) {
+                        showToast('Error saving filter.', 'error');
+                    }
+                });
+            }
+
+            // Clear saved filters
+            if (clearSavedFiltersBtn) {
+                clearSavedFiltersBtn.addEventListener('click', function() {
+                    if (confirm('Clear ALL saved filters?')) {
+                        localStorage.removeItem('venueFilters');
+                        updateSavedFiltersList();
+                        showToast('All saved filters cleared!', 'success');
+                    }
+                });
+            }
+
+            updateSavedFiltersList();
+            console.log('Venues filter script ready - waiting for Apply button');
+        });
+    </script>
+}

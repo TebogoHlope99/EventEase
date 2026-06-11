@@ -1,57 +1,689 @@
-﻿@model IEnumerable<EventEase.Models.Booking>
+﻿@using EventEase.Data
+@model PaginatedList<EventEase.Models.Booking>
 
 @{
     ViewData["Title"] = "Bookings";
+    var searchTerm = ViewData["CurrentSearchTerm"] as string;
+    var statusFilter = ViewData["CurrentStatusFilter"] as string;
+    var startDate = ViewData["CurrentStartDate"] as DateTime?;
+    var endDate = ViewData["CurrentEndDate"] as DateTime?;
+    var selectedVenueId = ViewData["CurrentVenueId"] as int?;
+    var selectedEventId = ViewData["CurrentEventId"] as int?;
+    var selectedEventTypeId = ViewData["CurrentEventTypeId"] as int?;
+    var showAvailableVenuesOnly = ViewData["ShowAvailableVenuesOnly"] as bool?;
 }
 
-<h1>Bookings</h1>
-
-@if (TempData["SuccessMessage"] != null)
-{
-    <div class="alert alert-success alert-dismissible fade show" role="alert">
-        @TempData["SuccessMessage"]
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1><i class="bi bi-calendar-check"></i> Bookings</h1>
+        <div>
+            <a asp-action="Consolidated" class="btn btn-info me-2">
+                <i class="bi bi-grid-3x3-gap-fill"></i> Dashboard View
+            </a>
+            <a asp-action="Create" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> Create New Booking
+            </a>
+        </div>
     </div>
-}
 
-@if (TempData["ErrorMessage"] != null)
-{
-    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-        @TempData["ErrorMessage"]
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    <!-- Advanced Filter Panel -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0"><i class="bi bi-funnel"></i> Filter Bookings</h5>
+        </div>
+        <div class="card-body">
+            <!-- REMOVED method="get" and id - we'll handle submission manually -->
+            <div id="filterForm">
+                <!-- Search Row -->
+                <div class="row g-3 mb-3">
+                    <div class="col-md-12">
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-search"></i></span>
+                            <input type="text" name="searchTerm" class="form-control"
+                                   placeholder="Search by Booking ID, Event Name, Venue, or Event Type..."
+                                   value="@searchTerm" id="searchInput">
+                            <!-- REMOVED automatic submit button - now just a text input -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Filter Row 1 -->
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label"><i class="bi bi-calendar"></i> From Date</label>
+                        <input type="date" name="startDate" class="form-control"
+                               value="@(startDate?.ToString("yyyy-MM-dd"))" id="startDateInput" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label"><i class="bi bi-calendar"></i> To Date</label>
+                        <input type="date" name="endDate" class="form-control"
+                               value="@(endDate?.ToString("yyyy-MM-dd"))" id="endDateInput" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label"><i class="bi bi-building"></i> Venue</label>
+                        <select name="venueId" class="form-select" asp-items="ViewBag.Venues" id="venueSelect">
+                            <option value="">-- All Venues --</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label"><i class="bi bi-calendar-event"></i> Event</label>
+                        <select name="eventId" class="form-select" asp-items="ViewBag.Events" id="eventSelect">
+                            <option value="">-- All Events --</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Filter Row 2 -->
+                <div class="row g-3 mt-2">
+                    <div class="col-md-3">
+                        <label class="form-label"><i class="bi bi-tag"></i> Event Type</label>
+                        <select name="eventTypeId" class="form-select" asp-items="ViewBag.EventTypes" id="eventTypeSelect">
+                            <option value="">-- All Types --</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label"><i class="bi bi-flag"></i> Status</label>
+                        <select name="statusFilter" class="form-select" id="statusFilterSelect">
+                            <option value="">-- All Bookings --</option>
+                            <option value="upcoming" selected="@(statusFilter == "upcoming")">🟢 Upcoming</option>
+                            <option value="past" selected="@(statusFilter == "past")">🔴 Past</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label"><i class="bi bi-check-circle"></i> Venue Availability</label>
+                        <select name="showAvailableVenuesOnly" class="form-select" id="availabilitySelect">
+                            <option value="">-- Any Venue Status --</option>
+                            <option value="true" selected="@(showAvailableVenuesOnly == true)">✅ Available Venues Only</option>
+                            <option value="false" selected="@(showAvailableVenuesOnly == false)">❌ Unavailable Venues Only</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label"><i class="bi bi-arrow-down-up"></i> Sort By</label>
+                        <select name="sortOrder" class="form-select" id="sortOrderSelect">
+                            <option value="bookingDate_desc">Booking Date (Newest First)</option>
+                            <option value="bookingDate_asc">Booking Date (Oldest First)</option>
+                            <option value="eventName">Event Name (A-Z)</option>
+                            <option value="eventName_desc">Event Name (Z-A)</option>
+                            <option value="venueName">Venue Name (A-Z)</option>
+                            <option value="venueName_desc">Venue Name (Z-A)</option>
+                            <option value="eventType">Event Type (A-Z)</option>
+                            <option value="eventType_desc">Event Type (Z-A)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Filter Actions Row -->
+                <div class="row g-3 mt-3">
+                    <div class="col-md-12 d-flex align-items-end">
+                        <button type="button" id="applyFiltersBtn" class="btn btn-primary me-2">
+                            <i class="bi bi-funnel"></i> Apply Filters
+                        </button>
+                        <button type="button" id="clearFiltersBtn" class="btn btn-secondary me-2">
+                            <i class="bi bi-eraser"></i> Clear Filters
+                        </button>
+                        <button type="button" id="saveFilterBtn" class="btn btn-outline-success me-2">
+                            <i class="bi bi-bookmark-plus"></i> Save Current Filter
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
+                            <i class="bi bi-clock-history"></i> Saved Filters
+                        </button>
+                        <ul class="dropdown-menu" id="savedFiltersList">
+                            <li><a class="dropdown-item text-muted" href="#">No saved filters</a></li>
+                        </ul>
+                        <button type="button" id="clearSavedFilters" class="btn btn-outline-danger ms-2" title="Clear all saved filters">
+                            <i class="bi bi-trash"></i> Clear All Saved Filters
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
+
+    <!-- Event Type Filter Chips (Now also require Apply button) -->
+    @if (ViewBag.EventTypeStats != null && ((IEnumerable<dynamic>)ViewBag.EventTypeStats).Any())
+    {
+        <div class="mb-4">
+            <h6 class="mb-2"><i class="bi bi-tags"></i> Quick Filter by Event Type:</h6>
+            <div class="d-flex flex-wrap gap-2">
+                @foreach (var type in ViewBag.EventTypeStats)
+                {
+                    <button type="button" class="badge quick-filter-chip @(selectedEventTypeId == type.EventTypeId ? "bg-primary" : "bg-secondary") text-decoration-none p-2"
+                            data-event-type-id="@type.EventTypeId" style="border: none; cursor: pointer;">
+                        <i class="bi bi-tag"></i> @type.TypeName (@type.Count)
+                    </button>
+                }
+            </div>
+            <small class="text-muted">Click a chip, then click "Apply Filters"</small>
+        </div>
+    }
+
+    <!-- Stats Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-white bg-primary">
+                <div class="card-body">
+                    <h5 class="card-title">Total Bookings</h5>
+                    <h2 class="mb-0">@ViewBag.TotalBookings</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-success">
+                <div class="card-body">
+                    <h5 class="card-title">Upcoming</h5>
+                    <h2 class="mb-0">@ViewBag.UpcomingBookings</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-secondary">
+                <div class="card-body">
+                    <h5 class="card-title">Past</h5>
+                    <h2 class="mb-0">@ViewBag.PastBookings</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-info">
+                <div class="card-body">
+                    <h5 class="card-title">Unique Venues</h5>
+                    <h2 class="mb-0">@ViewBag.UniqueVenuesBooked</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Active Filters Display -->
+    @if (!string.IsNullOrEmpty(searchTerm) || startDate.HasValue || endDate.HasValue || selectedVenueId.HasValue || selectedEventId.HasValue || selectedEventTypeId.HasValue || !string.IsNullOrEmpty(statusFilter) || showAvailableVenuesOnly == true)
+    {
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle"></i> <strong>Active Filters:</strong>
+            <div class="mt-2">
+                @if (!string.IsNullOrEmpty(searchTerm))
+                {
+                    <span class="badge bg-primary me-1 filter-badge">🔍 Search: @searchTerm <a href="#" class="text-white ms-1 remove-filter" data-field="searchTerm">✖</a></span>
+                }
+                @if (startDate.HasValue)
+                {
+                    <span class="badge bg-primary me-1 filter-badge">📅 From: @startDate.Value.ToString("yyyy-MM-dd") <a href="#" class="text-white ms-1 remove-filter" data-field="startDate">✖</a></span>
+                }
+                @if (endDate.HasValue)
+                {
+                    <span class="badge bg-primary me-1 filter-badge">📅 To: @endDate.Value.ToString("yyyy-MM-dd") <a href="#" class="text-white ms-1 remove-filter" data-field="endDate">✖</a></span>
+                }
+                @if (selectedVenueId.HasValue && selectedVenueId > 0 && ViewBag.VenuesList != null)
+                {
+                    var venue = ((IEnumerable<dynamic>)ViewBag.VenuesList).FirstOrDefault(v => v.VenueId == selectedVenueId.Value);
+                    if (venue != null)
+                    {
+                        <span class="badge bg-primary me-1 filter-badge">🏢 Venue: @venue.VenueName <a href="#" class="text-white ms-1 remove-filter" data-field="venueId">✖</a></span>
+                    }
+                }
+                @if (selectedEventId.HasValue && selectedEventId > 0 && ViewBag.EventsList != null)
+                {
+                    var ev = ((IEnumerable<dynamic>)ViewBag.EventsList).FirstOrDefault(e => e.EventId == selectedEventId.Value);
+                    if (ev != null)
+                    {
+                        <span class="badge bg-primary me-1 filter-badge">📅 Event: @ev.EventName <a href="#" class="text-white ms-1 remove-filter" data-field="eventId">✖</a></span>
+                    }
+                }
+                @if (selectedEventTypeId.HasValue && selectedEventTypeId > 0 && ViewBag.EventTypesList != null)
+                {
+                    var eventType = ((IEnumerable<dynamic>)ViewBag.EventTypesList).FirstOrDefault(et => et.EventTypeId == selectedEventTypeId.Value);
+                    if (eventType != null)
+                    {
+                        <span class="badge bg-primary me-1 filter-badge">🏷️ Type: @eventType.TypeName <a href="#" class="text-white ms-1 remove-filter" data-field="eventTypeId">✖</a></span>
+                    }
+                }
+                @if (!string.IsNullOrEmpty(statusFilter))
+                {
+                    <span class="badge bg-primary me-1 filter-badge">⏰ Status: @(statusFilter == "upcoming" ? "Upcoming" : "Past") <a href="#" class="text-white ms-1 remove-filter" data-field="statusFilter">✖</a></span>
+                }
+                @if (showAvailableVenuesOnly == true)
+                {
+                    <span class="badge bg-primary me-1 filter-badge">✅ Available Venues Only <a href="#" class="text-white ms-1 remove-filter" data-field="showAvailableVenuesOnly">✖</a></span>
+                }
+            </div>
+        </div>
+    }
+
+    <!-- Bookings Table -->
+    <div class="table-responsive">
+        <table class="table table-striped table-hover">
+            <thead class="table-dark">
+                <tr>
+                    <th>ID</th>
+                    <th>Event</th>
+                    <th>Event Type</th>
+                    <th>Venue</th>
+                    <th>Venue Status</th>
+                    <th>Booking Date</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model)
+                {
+                    var isUpcoming = item.BookingDate >= DateTime.Now;
+                    <tr>
+                        <td><span class="badge bg-secondary">#@item.BookingId</span></td>
+                        <td>
+                            <strong>@item.Event?.EventName</strong><br />
+                            <small class="text-muted">@(item.Event?.EventDate.ToString("MMM dd, yyyy"))</small>
+                        </td>
+                        <td>
+                            @if (item.Event?.EventType != null)
+                            {
+                                <span class="badge bg-@(item.Event.EventType.ColorClass)">
+                                    <i class="@item.Event.EventType.IconClass"></i> @item.Event.EventType.TypeName
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary">Uncategorized</span>
+                            }
+                        </td>
+                        <td>
+                            @item.Venue?.VenueName<br />
+                            <small class="text-muted">@item.Venue?.Location</small>
+                        </td>
+                        <td>
+                            @if (item.Venue?.IsAvailable == true)
+                            {
+                                <span class="badge bg-success">Available</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-danger">Unavailable</span>
+                            }
+                        </td>
+                        <td>@item.BookingDate.ToString("yyyy-MM-dd")</td>
+                        <td>
+                            @if (isUpcoming)
+                            {
+                                <span class="badge bg-success">Upcoming</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary">Past</span>
+                            }
+                        </td>
+                        <td>
+                            <div class="btn-group" role="group">
+                                <a asp-action="Details" asp-route-id="@item.BookingId" class="btn btn-sm btn-info" title="Details">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                <a asp-action="Edit" asp-route-id="@item.BookingId" class="btn btn-sm btn-warning" title="Edit">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <a asp-action="Delete" asp-route-id="@item.BookingId" class="btn btn-sm btn-danger" title="Delete">
+                                    <i class="bi bi-trash"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    @if (Model.TotalPages > 1)
+    {
+        <nav aria-label="Page navigation">
+            <ul class="pagination justify-content-center">
+                @if (Model.HasPreviousPage)
+                {
+                    <li class="page-item">
+                        <a class="page-link" asp-action="Index"
+                           asp-route-searchTerm="@searchTerm"
+                           asp-route-startDate="@startDate"
+                           asp-route-endDate="@endDate"
+                           asp-route-venueId="@selectedVenueId"
+                           asp-route-eventId="@selectedEventId"
+                           asp-route-eventTypeId="@selectedEventTypeId"
+                           asp-route-statusFilter="@statusFilter"
+                           asp-route-showAvailableVenuesOnly="@showAvailableVenuesOnly"
+                           asp-route-pageNumber="@(Model.PageIndex - 1)">Previous</a>
+                    </li>
+                }
+                else
+                {
+                    <li class="page-item disabled"><span class="page-link">Previous</span></li>
+                }
+
+                @for (int i = 1; i <= Model.TotalPages; i++)
+                {
+                    if (i == Model.PageIndex)
+                    {
+                        <li class="page-item active"><span class="page-link">@i</span></li>
+                    }
+                    else
+                    {
+                        <li class="page-item">
+                            <a class="page-link" asp-action="Index"
+                               asp-route-searchTerm="@searchTerm"
+                               asp-route-startDate="@startDate"
+                               asp-route-endDate="@endDate"
+                               asp-route-venueId="@selectedVenueId"
+                               asp-route-eventId="@selectedEventId"
+                               asp-route-eventTypeId="@selectedEventTypeId"
+                               asp-route-statusFilter="@statusFilter"
+                               asp-route-showAvailableVenuesOnly="@showAvailableVenuesOnly"
+                               asp-route-pageNumber="@i">@i</a>
+                        </li>
+                    }
+                }
+
+                @if (Model.HasNextPage)
+                {
+                    <li class="page-item">
+                        <a class="page-link" asp-action="Index"
+                           asp-route-searchTerm="@searchTerm"
+                           asp-route-startDate="@startDate"
+                           asp-route-endDate="@endDate"
+                           asp-route-venueId="@selectedVenueId"
+                           asp-route-eventId="@selectedEventId"
+                           asp-route-eventTypeId="@selectedEventTypeId"
+                           asp-route-statusFilter="@statusFilter"
+                           asp-route-showAvailableVenuesOnly="@showAvailableVenuesOnly"
+                           asp-route-pageNumber="@(Model.PageIndex + 1)">Next</a>
+                    </li>
+                }
+                else
+                {
+                    <li class="page-item disabled"><span class="page-link">Next</span></li>
+                }
+            </ul>
+        </nav>
+    }
+
+    @if (!Model.Any())
+    {
+        <div class="alert alert-info text-center">
+            <i class="bi bi-info-circle"></i> No bookings found matching your criteria.
+            <a asp-action="Create" class="alert-link">Click here to create your first booking!</a>
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        // Wait for the page to fully load
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Page loaded - Initializing filters...');
+
+            // ============================================
+            // GET ALL FORM ELEMENTS
+            // ============================================
+            const searchInput = document.getElementById('searchInput');
+            const startDateInput = document.getElementById('startDateInput');
+            const endDateInput = document.getElementById('endDateInput');
+            const venueSelect = document.getElementById('venueSelect');
+            const eventSelect = document.getElementById('eventSelect');
+            const eventTypeSelect = document.getElementById('eventTypeSelect');
+            const statusFilterSelect = document.getElementById('statusFilterSelect');
+            const availabilitySelect = document.getElementById('availabilitySelect');
+            const sortOrderSelect = document.getElementById('sortOrderSelect');
+
+            const applyFiltersBtn = document.getElementById('applyFiltersBtn');
+            const clearFiltersBtn = document.getElementById('clearFiltersBtn');
+            const saveFilterBtn = document.getElementById('saveFilterBtn');
+            const clearSavedFiltersBtn = document.getElementById('clearSavedFiltersBtn');
+
+            // ============================================
+            // FUNCTION TO BUILD URL WITH CURRENT FILTERS
+            // ============================================
+            function buildFilterUrl() {
+                const params = new URLSearchParams();
+
+                if (searchInput.value) params.append('searchTerm', searchInput.value);
+                if (startDateInput.value) params.append('startDate', startDateInput.value);
+                if (endDateInput.value) params.append('endDate', endDateInput.value);
+                if (venueSelect.value && venueSelect.value !== '') params.append('venueId', venueSelect.value);
+                if (eventSelect.value && eventSelect.value !== '') params.append('eventId', eventSelect.value);
+                if (eventTypeSelect.value && eventTypeSelect.value !== '') params.append('eventTypeId', eventTypeSelect.value);
+                if (statusFilterSelect.value && statusFilterSelect.value !== '') params.append('statusFilter', statusFilterSelect.value);
+                if (availabilitySelect.value && availabilitySelect.value !== '') params.append('showAvailableVenuesOnly', availabilitySelect.value);
+                if (sortOrderSelect.value && sortOrderSelect.value !== 'bookingDate_desc') params.append('sortOrder', sortOrderSelect.value);
+
+                const url = window.location.pathname + (params.toString() ? '?' + params.toString() : '');
+                console.log('Navigating to:', url);
+                return url;
+            }
+
+            // ============================================
+            // APPLY FILTERS - Only when button is clicked
+            // ============================================
+            if (applyFiltersBtn) {
+                applyFiltersBtn.addEventListener('click', function() {
+                    console.log('Apply Filters button clicked');
+                    const url = buildFilterUrl();
+                    window.location.href = url;
+                });
+            }
+
+            // ============================================
+            // CLEAR ALL FILTERS
+            // ============================================
+            if (clearFiltersBtn) {
+                clearFiltersBtn.addEventListener('click', function() {
+                    console.log('Clear Filters button clicked');
+                    window.location.href = window.location.pathname;
+                });
+            }
+
+            // ============================================
+            // QUICK FILTER CHIPS (Event Types)
+            // ============================================
+            const quickFilterChips = document.querySelectorAll('.quick-filter-chip');
+            quickFilterChips.forEach(chip => {
+                chip.addEventListener('click', function() {
+                    const eventTypeId = this.getAttribute('data-event-type-id');
+                    if (eventTypeId && eventTypeSelect) {
+                        eventTypeSelect.value = eventTypeId;
+                        // Optionally highlight the selected chip
+                        quickFilterChips.forEach(c => c.classList.remove('bg-primary'));
+                        quickFilterChips.forEach(c => c.classList.add('bg-secondary'));
+                        this.classList.remove('bg-secondary');
+                        this.classList.add('bg-primary');
+
+                        // Show a small confirmation
+                        showToast('Event type selected. Click "Apply Filters" to search.', 'info');
+                    }
+                });
+            });
+
+            // ============================================
+            // REMOVE INDIVIDUAL FILTER
+            // ============================================
+            document.addEventListener('click', function(e) {
+                const removeBtn = e.target.closest('.remove-filter');
+                if (removeBtn) {
+                    e.preventDefault();
+                    const field = removeBtn.getAttribute('data-field');
+
+                    switch(field) {
+                        case 'searchTerm':
+                            if (searchInput) searchInput.value = '';
+                            break;
+                        case 'startDate':
+                            if (startDateInput) startDateInput.value = '';
+                            break;
+                        case 'endDate':
+                            if (endDateInput) endDateInput.value = '';
+                            break;
+                        case 'venueId':
+                            if (venueSelect) venueSelect.value = '';
+                            break;
+                        case 'eventId':
+                            if (eventSelect) eventSelect.value = '';
+                            break;
+                        case 'eventTypeId':
+                            if (eventTypeSelect) eventTypeSelect.value = '';
+                            // Also reset chip highlighting
+                            quickFilterChips.forEach(c => {
+                                c.classList.remove('bg-primary');
+                                c.classList.add('bg-secondary');
+                            });
+                            break;
+                        case 'statusFilter':
+                            if (statusFilterSelect) statusFilterSelect.value = '';
+                            break;
+                        case 'showAvailableVenuesOnly':
+                            if (availabilitySelect) availabilitySelect.value = '';
+                            break;
+                    }
+
+                    console.log(`Removed filter: ${field}`);
+                    // Apply the cleared filters immediately
+                    const url = buildFilterUrl();
+                    window.location.href = url;
+                }
+            });
+
+            // ============================================
+            // TOAST NOTIFICATION FUNCTION
+            // ============================================
+            function showToast(message, type) {
+                const existingToasts = document.querySelectorAll('.custom-toast');
+                existingToasts.forEach(toast => toast.remove());
+
+                const colors = { success: '#198754', error: '#dc3545', warning: '#ffc107', info: '#0dcaf0' };
+                const icons = { success: '✓', error: '✗', warning: '⚠', info: 'ℹ' };
+
+                const bgColor = colors[type] || colors.info;
+                const textColor = type === 'warning' ? '#000000' : '#ffffff';
+                const icon = icons[type] || icons.info;
+
+                const toast = document.createElement('div');
+                toast.className = 'custom-toast';
+                toast.style.cssText = `
+                    position: fixed; bottom: 20px; right: 20px; padding: 15px 20px;
+                    background-color: ${bgColor}; color: ${textColor}; z-index: 9999;
+                    min-width: 280px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                    cursor: pointer; font-weight: 500;
+                `;
+                toast.innerHTML = `
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <span style="font-size: 20px; font-weight: bold;">${icon}</span>
+                        <span style="flex: 1;">${message}</span>
+                        <button style="background: none; border: none; color: inherit; font-size: 20px; cursor: pointer;" onclick="this.closest('.custom-toast').remove()">&times;</button>
+                    </div>
+                `;
+                document.body.appendChild(toast);
+                setTimeout(() => toast.remove(), 3000);
+                toast.addEventListener('click', () => toast.remove());
+            }
+
+            // ============================================
+            // SAVED FILTERS FUNCTIONALITY
+            // ============================================
+            function getCurrentFilters() {
+                return {
+                    searchTerm: searchInput ? searchInput.value : '',
+                    startDate: startDateInput ? startDateInput.value : '',
+                    endDate: endDateInput ? endDateInput.value : '',
+                    venueId: venueSelect ? venueSelect.value : '',
+                    eventId: eventSelect ? eventSelect.value : '',
+                    eventTypeId: eventTypeSelect ? eventTypeSelect.value : '',
+                    statusFilter: statusFilterSelect ? statusFilterSelect.value : '',
+                    showAvailableVenuesOnly: availabilitySelect ? availabilitySelect.value : '',
+                    sortOrder: sortOrderSelect ? sortOrderSelect.value : '',
+                    savedAt: new Date().toLocaleString()
+                };
+            }
+
+            function updateSavedFiltersList() {
+                const savedFilters = JSON.parse(localStorage.getItem('bookingFilters') || '[]');
+                const listContainer = document.getElementById('savedFiltersList');
+                if (!listContainer) return;
+
+                let listHtml = '';
+                if (savedFilters.length === 0) {
+                    listHtml = '<li><a class="dropdown-item text-muted" href="#"><i class="bi bi-info-circle"></i> No saved filters</a></li>';
+                } else {
+                    savedFilters.forEach(function(filter, index) {
+                        const description = [];
+                        if (filter.searchTerm) description.push('🔍 ' + filter.searchTerm.substring(0, 25));
+                        if (filter.venueId && filter.venueId !== '') description.push('🏢 Venue: ' + filter.venueId);
+                        if (filter.eventId && filter.eventId !== '') description.push('📅 Event: ' + filter.eventId);
+                        if (filter.eventTypeId && filter.eventTypeId !== '') description.push('🏷️ Type: ' + filter.eventTypeId);
+                        if (filter.statusFilter === 'upcoming') description.push('🟢 Upcoming');
+                        if (filter.statusFilter === 'past') description.push('🔴 Past');
+                        if (filter.showAvailableVenuesOnly === 'true') description.push('✅ Available Venues');
+                        if (filter.showAvailableVenuesOnly === 'false') description.push('❌ Unavailable Venues');
+                        if (description.length === 0) description.push('📋 All Bookings');
+
+                        let displayText = description.join(', ');
+                        if (displayText.length > 55) displayText = displayText.substring(0, 52) + '...';
+                        listHtml += '<li><a class="dropdown-item" href="#" data-filter-index="' + index + '">' +
+                            '<div><i class="bi bi-bookmark-check-fill text-success me-1"></i> ' + displayText + '</div>' +
+                            '<small class="text-muted">📅 ' + (filter.savedAt || 'Unknown') + '</small></a></li>';
+                    });
+                }
+                listContainer.innerHTML = listHtml;
+
+                document.querySelectorAll('#savedFiltersList a[data-filter-index]').forEach(link => {
+                    link.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        const index = parseInt(this.getAttribute('data-filter-index'));
+                        const filter = savedFilters[index];
+                        if (!filter) return;
+
+                        if (searchInput) searchInput.value = filter.searchTerm || '';
+                        if (startDateInput) startDateInput.value = filter.startDate || '';
+                        if (endDateInput) endDateInput.value = filter.endDate || '';
+                        if (venueSelect) venueSelect.value = filter.venueId || '';
+                        if (eventSelect) eventSelect.value = filter.eventId || '';
+                        if (eventTypeSelect) eventTypeSelect.value = filter.eventTypeId || '';
+                        if (statusFilterSelect) statusFilterSelect.value = filter.statusFilter || '';
+                        if (availabilitySelect) availabilitySelect.value = filter.showAvailableVenuesOnly || '';
+                        if (sortOrderSelect) sortOrderSelect.value = filter.sortOrder || 'bookingDate_desc';
+
+                        showToast('Filter loaded! Click Apply Filters to search.', 'success');
+                    });
+                });
+            }
+
+            if (saveFilterBtn) {
+                saveFilterBtn.addEventListener('click', function() {
+                    const filters = getCurrentFilters();
+                    const hasFilters = filters.searchTerm || filters.startDate || filters.endDate ||
+                                      filters.venueId || filters.eventId || filters.eventTypeId ||
+                                      filters.statusFilter || filters.showAvailableVenuesOnly;
+
+                    if (!hasFilters) {
+                        showToast('No filters to save. Apply some filters first.', 'warning');
+                        return;
+                    }
+
+                    try {
+                        let savedFilters = JSON.parse(localStorage.getItem('bookingFilters') || '[]');
+                        savedFilters.unshift(filters);
+                        if (savedFilters.length > 10) savedFilters.pop();
+                        localStorage.setItem('bookingFilters', JSON.stringify(savedFilters));
+                        updateSavedFiltersList();
+                        showToast('Filter saved successfully!', 'success');
+                    } catch(error) {
+                        showToast('Error saving filter.', 'error');
+                    }
+                });
+            }
+
+            if (clearSavedFiltersBtn) {
+                clearSavedFiltersBtn.addEventListener('click', function() {
+                    if (confirm('Clear ALL saved filters?')) {
+                        localStorage.removeItem('bookingFilters');
+                        updateSavedFiltersList();
+                        showToast('All saved filters cleared!', 'success');
+                    }
+                });
+            }
+
+            updateSavedFiltersList();
+            console.log('Filter script initialized - waiting for Apply button');
+        });
+    </script>
 }
-
-<p>
-    <a asp-action="Create" class="btn btn-primary">Create New Booking</a>
-</p>
-
-<table class="table table-striped table-hover">
-    <thead>
-        <tr>
-            <th>@Html.DisplayNameFor(model => model.BookingId)</th>
-            <th>Event</th>
-            <th>Venue</th>
-            <th>@Html.DisplayNameFor(model => model.BookingDate)</th>
-            <th>@Html.DisplayNameFor(model => model.CreatedAt)</th>
-            <th>Actions</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var item in Model)
-        {
-            <tr>
-                <td>@Html.DisplayFor(modelItem => item.BookingId)</td>
-                <td>@item.Event?.EventName</td>
-                <td>@item.Venue?.VenueName</td>
-                <td>@item.BookingDate.ToString("yyyy-MM-dd")</td>
-                <td>@item.CreatedAt.ToString("yyyy-MM-dd HH:mm")</td>
-                <td>
-                    <a asp-action="Edit" asp-route-id="@item.BookingId" class="btn btn-sm btn-warning">Edit</a>
-                    <a asp-action="Details" asp-route-id="@item.BookingId" class="btn btn-sm btn-info">Details</a>
-                    <a asp-action="Delete" asp-route-id="@item.BookingId" class="btn btn-sm btn-danger">Delete</a>
-                </td>
-            </tr>
-        }
-    </tbody>
-</table>

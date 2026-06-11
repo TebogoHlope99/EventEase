@@ -1,5 +1,7 @@
-using Microsoft.EntityFrameworkCore;
 using EventEase.Data;
+using EventEase.Middleware;
+using EventEase.Services;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,6 +23,10 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.EnableDetailedErrors(builder.Environment.IsDevelopment());
 });
 
+// Register Blob Storage Service
+builder.Services.AddScoped<IBlobStorageService, BlobStorageService>();
+builder.Services.AddLogging();
+
 var app = builder.Build();
 
 
@@ -37,14 +43,12 @@ else
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
-
 app.UseRouting();
-
 app.UseAuthorization();
-
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
+app.UseMiddleware<ErrorHandlingMiddleware>();
 
 // Ensure database is created and seeded
 using (var scope = app.Services.CreateScope())
@@ -63,6 +67,7 @@ using (var scope = app.Services.CreateScope())
     }
     catch (Exception ex)
     {
+        var logger = services.GetRequiredService<ILogger<Program>>();
         Console.WriteLine($"An error occurred while setting up the database: {ex.Message}");
         Console.WriteLine(ex.StackTrace);
     }

@@ -1,0 +1,304 @@
+﻿@using EventEase.Data
+@model PaginatedList<EventEase.Models.EventType>
+
+@{
+    ViewData["Title"] = "Event Types";
+    var searchString = ViewData["CurrentFilter"] as string;
+    var currentSort = ViewData["CurrentSort"] as string;
+}
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1><i class="bi bi-tags"></i> Event Types</h1>
+        <a asp-action="Create" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Create New Event Type
+        </a>
+    </div>
+
+    <!-- Search and Filter Panel -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0"><i class="bi bi-search"></i> Search Event Types</h5>
+        </div>
+        <div class="card-body">
+            <form method="get" asp-action="Index" class="row g-3" id="searchForm">
+                <div class="col-md-8">
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-search"></i></span>
+                        <input type="text" name="searchString" class="form-control"
+                               placeholder="Search by type name or description..."
+                               value="@searchString" id="searchInput">
+                        <button type="submit" class="btn btn-primary">Search</button>
+                        @if (!string.IsNullOrEmpty(searchString))
+                        {
+                            <a asp-action="Index" class="btn btn-secondary">Clear</a>
+                        }
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <button type="button" id="resetSortBtn" class="btn btn-outline-secondary w-100">
+                        <i class="bi bi-arrow-repeat"></i> Reset Sorting
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card text-white bg-primary">
+                <div class="card-body">
+                    <h5 class="card-title">Total Event Types</h5>
+                    <h2 class="mb-0">@Model.TotalCount</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-white bg-success">
+                <div class="card-body">
+                    <h5 class="card-title">Active Types</h5>
+                    <h2 class="mb-0">@Model.Count(et => et.IsActive)</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-white bg-info">
+                <div class="card-body">
+                    <h5 class="card-title">Total Events</h5>
+                    <h2 class="mb-0">@Model.Sum(et => et.Events?.Count ?? 0)</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Event Types Table with Clickable Headers -->
+    <div class="table-responsive">
+        <table class="table table-striped table-hover">
+            <thead class="table-dark">
+                <tr>
+                    <th style="width: 60px;">Icon</th>
+                    <th>
+                        <a asp-action="Index"
+                           asp-route-sortOrder="@ViewData["NameSortParm"]"
+                           asp-route-searchString="@searchString"
+                           class="text-white text-decoration-none">
+                            Type Name
+                            @if (currentSort == "name_desc")
+                            {
+                                <i class="bi bi-arrow-down ms-1"></i>
+                            }
+                            else if (currentSort == "name" || string.IsNullOrEmpty(currentSort))
+                            {
+                                <i class="bi bi-arrow-up ms-1"></i>
+                            }
+                            else
+                            {
+                                <i class="bi bi-arrow-up-down ms-1"></i>
+                            }
+                        </a>
+                    </th>
+                    <th>
+                        <a asp-action="Index"
+                           asp-route-sortOrder="@ViewData["DescriptionSortParm"]"
+                           asp-route-searchString="@searchString"
+                           class="text-white text-decoration-none">
+                            Description
+                            @if (currentSort == "description_desc")
+                            {
+                                <i class="bi bi-arrow-down ms-1"></i>
+                            }
+                            else if (currentSort == "description")
+                            {
+                                <i class="bi bi-arrow-up ms-1"></i>
+                            }
+                            else
+                            {
+                                <i class="bi bi-arrow-up-down ms-1"></i>
+                            }
+                        </a>
+                    </th>
+                    <th>
+                        <a asp-action="Index"
+                           asp-route-sortOrder="@ViewData["ColorSortParm"]"
+                           asp-route-searchString="@searchString"
+                           class="text-white text-decoration-none">
+                            Color
+                            @if (currentSort == "color_desc")
+                            {
+                                <i class="bi bi-arrow-down ms-1"></i>
+                            }
+                            else if (currentSort == "color")
+                            {
+                                <i class="bi bi-arrow-up ms-1"></i>
+                            }
+                            else
+                            {
+                                <i class="bi bi-arrow-up-down ms-1"></i>
+                            }
+                        </a>
+                    </th>
+                    <th>
+                        <a asp-action="Index"
+                           asp-route-sortOrder="@ViewData["StatusSortParm"]"
+                           asp-route-searchString="@searchString"
+                           class="text-white text-decoration-none">
+                            Status
+                            @if (currentSort == "status_desc")
+                            {
+                                <i class="bi bi-arrow-down ms-1"></i>
+                            }
+                            else if (currentSort == "status")
+                            {
+                                <i class="bi bi-arrow-up ms-1"></i>
+                            }
+                            else
+                            {
+                                <i class="bi bi-arrow-up-down ms-1"></i>
+                            }
+                        </a>
+                    </th>
+                    <th>
+                        <a asp-action="Index"
+                           asp-route-sortOrder="@ViewData["EventsCountSortParm"]"
+                           asp-route-searchString="@searchString"
+                           class="text-white text-decoration-none">
+                            Events Count
+                            @if (currentSort == "eventsCount_desc")
+                            {
+                                <i class="bi bi-arrow-down ms-1"></i>
+                            }
+                            else if (currentSort == "eventsCount")
+                            {
+                                <i class="bi bi-arrow-up ms-1"></i>
+                            }
+                            else
+                            {
+                                <i class="bi bi-arrow-up-down ms-1"></i>
+                            }
+                        </a>
+                    </th>
+                    <th style="width: 120px;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model)
+                {
+                    <tr>
+                        <td>
+                            <i class="bi @item.IconClass fs-4"></i>
+                        </td>
+                        <td><strong>@item.TypeName</strong></td>
+                        <td>@(item.Description?.Length > 50 ? item.Description.Substring(0, 50) + "..." : item.Description)</td>
+                        <td>
+                            <span class="badge bg-@item.ColorClass">@item.ColorClass</span>
+                        </td>
+                        <td>
+                            @if (item.IsActive)
+                            {
+                                <span class="badge bg-success">Active</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-danger">Inactive</span>
+                            }
+                        </td>
+                        <td>
+                            <span class="badge bg-secondary">@(item.Events?.Count ?? 0)</span>
+                        </td>
+                        <td>
+                            <div class="btn-group" role="group">
+                                <a asp-action="Edit" asp-route-id="@item.EventTypeId" class="btn btn-sm btn-warning" title="Edit">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <a asp-action="Details" asp-route-id="@item.EventTypeId" class="btn btn-sm btn-info" title="Details">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                <a asp-action="Delete" asp-route-id="@item.EventTypeId" class="btn btn-sm btn-danger" title="Delete">
+                                    <i class="bi bi-trash"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    @if (Model.TotalPages > 1)
+    {
+        <nav aria-label="Page navigation">
+            <ul class="pagination justify-content-center">
+                @if (Model.HasPreviousPage)
+                {
+                    <li class="page-item">
+                        <a class="page-link" asp-action="Index"
+                           asp-route-searchString="@searchString"
+                           asp-route-sortOrder="@currentSort"
+                           asp-route-pageNumber="@(Model.PageIndex - 1)">Previous</a>
+                    </li>
+                }
+                else
+                {
+                    <li class="page-item disabled"><span class="page-link">Previous</span></li>
+                }
+
+                @for (int i = 1; i <= Model.TotalPages; i++)
+                {
+                    if (i == Model.PageIndex)
+                    {
+                        <li class="page-item active"><span class="page-link">@i</span></li>
+                    }
+                    else
+                    {
+                        <li class="page-item">
+                            <a class="page-link" asp-action="Index"
+                               asp-route-searchString="@searchString"
+                               asp-route-sortOrder="@currentSort"
+                               asp-route-pageNumber="@i">@i</a>
+                        </li>
+                    }
+                }
+
+                @if (Model.HasNextPage)
+                {
+                    <li class="page-item">
+                        <a class="page-link" asp-action="Index"
+                           asp-route-searchString="@searchString"
+                           asp-route-sortOrder="@currentSort"
+                           asp-route-pageNumber="@(Model.PageIndex + 1)">Next</a>
+                    </li>
+                }
+                else
+                {
+                    <li class="page-item disabled"><span class="page-link">Next</span></li>
+                }
+            </ul>
+        </nav>
+    }
+
+    @if (!Model.Any())
+    {
+        <div class="alert alert-info text-center">
+            <i class="bi bi-info-circle"></i> No event types found.
+            <a asp-action="Create" class="alert-link">Click here to create your first event type!</a>
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        // Optional: Add keyboard shortcut for search (Enter key)
+        document.getElementById('searchInput')?.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                document.getElementById('searchForm').submit();
+            }
+        });
+
+        // Reset sort button functionality
+        document.getElementById('resetSortBtn')?.addEventListener('click', function() {
+            window.location.href = window.location.pathname + '?searchString=' + encodeURIComponent('@searchString');
+        });
+    </script>
+}

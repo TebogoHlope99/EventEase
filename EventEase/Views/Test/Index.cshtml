@@ -1,0 +1,37 @@
+﻿@{
+    ViewData["Title"] = "Storage Connection Test";
+}
+
+<h1>Azure Storage Connection Test</h1>
+
+<div class="card">
+    <div class="card-header bg-primary text-white">
+        <h4>Test Results</h4>
+    </div>
+    <div class="card-body">
+        @if (ViewBag.Results != null)
+        {
+            <ul class="list-group">
+                @foreach (var result in ViewBag.Results)
+                {
+                    if (result.ToString().Contains("✅"))
+                    {
+                        <li class="list-group-item list-group-item-success">@Html.Raw(result)</li>
+                    }
+                    else if (result.ToString().Contains("❌"))
+                    {
+                        <li class="list-group-item list-group-item-danger">@Html.Raw(result)</li>
+                    }
+                    else
+                    {
+                        <li class="list-group-item">@Html.Raw(result)</li>
+                    }
+                }
+            </ul>
+        }
+    </div>
+</div>
+
+<div class="mt-3">
+    <a href="/Venues" class="btn btn-secondary">Back to Venues</a>
+</div>

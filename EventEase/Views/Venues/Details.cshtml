@@ -14,33 +14,16 @@
             </div>
             <div class="card-body">
                 <dl class="row">
-                    <dt class="col-sm-3">
-                        @Html.DisplayNameFor(model => model.VenueName)
-                    </dt>
-                    <dd class="col-sm-9">
-                        @Html.DisplayFor(model => model.VenueName)
-                    </dd>
-
-                    <dt class="col-sm-3">
-                        @Html.DisplayNameFor(model => model.Location)
-                    </dt>
-                    <dd class="col-sm-9">
-                        @Html.DisplayFor(model => model.Location)
-                    </dd>
-
-                    <dt class="col-sm-3">
-                        @Html.DisplayNameFor(model => model.Capacity)
-                    </dt>
-                    <dd class="col-sm-9">
-                        @Html.DisplayFor(model => model.Capacity)
-                    </dd>
-
-                    <dt class="col-sm-3">
-                        @Html.DisplayNameFor(model => model.CreatedAt)
-                    </dt>
-                    <dd class="col-sm-9">
-                        @Model.CreatedAt.ToString("yyyy-MM-dd HH:mm")
-                    </dd>
+                    <dt class="col-sm-3">Venue Name</dt>
+                    <dd class="col-sm-9">@Model.VenueName</dd>
+                    <dt class="col-sm-3">Location</dt>
+                    <dd class="col-sm-9">@Model.Location</dd>
+                    <dt class="col-sm-3">Capacity</dt>
+                    <dd class="col-sm-9"><span class="badge bg-info">@Model.Capacity people</span></dd>
+                    <dt class="col-sm-3">Status</dt>
+                    <dd class="col-sm-9">@(Model.IsAvailable ? "Available" : "Not Available")</dd>
+                    <dt class="col-sm-3">Created</dt>
+                    <dd class="col-sm-9">@Model.CreatedAt.ToString("yyyy-MM-dd HH:mm")</dd>
                 </dl>
             </div>
         </div>
@@ -58,7 +41,7 @@
                 }
                 else
                 {
-                    <img src="https://placehold.co/600x400/3b82f6/white?text=No+Image" alt="No Image" class="img-fluid rounded" style="max-height: 200px;" />
+                    <div class="text-muted"><i class="bi bi-image" style="font-size: 50px;"></i><p>No image available</p></div>
                 }
             </div>
         </div>

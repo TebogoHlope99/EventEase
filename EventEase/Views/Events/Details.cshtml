@@ -14,30 +14,30 @@
             </div>
             <div class="card-body">
                 <dl class="row">
-                    <dt class="col-sm-3">
-                        @Html.DisplayNameFor(model => model.EventName)
-                    </dt>
+                    <dt class="col-sm-3">Event Name</dt>
+                    <dd class="col-sm-9">@Model.EventName</dd>
+
+                    <dt class="col-sm-3">Event Date</dt>
+                    <dd class="col-sm-9">@Model.EventDate.ToString("yyyy-MM-dd HH:mm")</dd>
+
+                    <dt class="col-sm-3">Event Type</dt>
                     <dd class="col-sm-9">
-                        @Html.DisplayFor(model => model.EventName)
+                        @if (Model.EventType != null)
+                        {
+                            <span class="badge bg-@(Model.EventType.ColorClass)">
+                                <i class="@Model.EventType.IconClass"></i> @Model.EventType.TypeName
+                            </span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-secondary">Uncategorized</span>
+                        }
                     </dd>
 
-                    <dt class="col-sm-3">
-                        @Html.DisplayNameFor(model => model.EventDate)
-                    </dt>
-                    <dd class="col-sm-9">
-                        @Model.EventDate.ToString("yyyy-MM-dd HH:mm")
-                    </dd>
+                    <dt class="col-sm-3">Description</dt>
+                    <dd class="col-sm-9">@Model.Description</dd>
 
-                    <dt class="col-sm-3">
-                        @Html.DisplayNameFor(model => model.Description)
-                    </dt>
-                    <dd class="col-sm-9">
-                        @Html.DisplayFor(model => model.Description)
-                    </dd>
-
-                    <dt class="col-sm-3">
-                        Venue
-                    </dt>
+                    <dt class="col-sm-3">Venue</dt>
                     <dd class="col-sm-9">
                         @if (Model.Venue != null)
                         {
@@ -53,12 +53,8 @@
                         }
                     </dd>
 
-                    <dt class="col-sm-3">
-                        @Html.DisplayNameFor(model => model.CreatedAt)
-                    </dt>
-                    <dd class="col-sm-9">
-                        @Model.CreatedAt.ToString("yyyy-MM-dd HH:mm")
-                    </dd>
+                    <dt class="col-sm-3">Created</dt>
+                    <dd class="col-sm-9">@Model.CreatedAt.ToString("yyyy-MM-dd HH:mm")</dd>
                 </dl>
             </div>
         </div>
@@ -76,7 +72,10 @@
                 }
                 else
                 {
-                    <img src="https://placehold.co/600x400/8b5cf6/white?text=No+Image" alt="No Image" class="img-fluid rounded" style="max-height: 200px;" />
+                    <div class="text-muted">
+                        <i class="bi bi-image" style="font-size: 50px;"></i>
+                        <p>No image available</p>
+                    </div>
                 }
             </div>
         </div>

@@ -6,12 +6,9 @@
 
 <h1>Edit Event</h1>
 
-<h4>Event Details</h4>
-<hr />
-
 <div class="row">
     <div class="col-md-6">
-        <form asp-action="Edit">
+        <form asp-action="Edit" enctype="multipart/form-data" method="post">
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
             <input type="hidden" asp-for="EventId" />
             <input type="hidden" asp-for="CreatedAt" />
@@ -34,23 +31,45 @@
                 <span asp-validation-for="Description" class="text-danger"></span>
             </div>
 
+            <!-- Event Type Dropdown - ADD THIS -->
+            <div class="form-group mb-3">
+                <label asp-for="EventTypeId" class="control-label">Event Type</label>
+                <select asp-for="EventTypeId" class="form-control" asp-items="ViewBag.EventTypes">
+                    <option value="">-- Select Event Type --</option>
+                </select>
+                <span asp-validation-for="EventTypeId" class="text-danger"></span>
+            </div>
+
             <div class="form-group mb-3">
                 <label asp-for="VenueId" class="control-label">Venue</label>
-                <select asp-for="VenueId" class="form-control" asp-items="ViewBag.Venues as SelectList">
+                <select asp-for="VenueId" class="form-control" asp-items="ViewBag.Venues">
                     <option value="">-- Select Venue --</option>
                 </select>
                 <span asp-validation-for="VenueId" class="text-danger"></span>
             </div>
 
             <div class="form-group mb-3">
-                <label asp-for="ImageUrl" class="control-label">Image URL</label>
-                <input asp-for="ImageUrl" class="form-control" />
-                <span asp-validation-for="ImageUrl" class="text-danger"></span>
+                <label class="control-label">Change Image</label>
+                <input type="file" name="imageFile" class="form-control" accept="image/jpeg,image/png,image/gif" />
+                <small class="form-text text-muted">Leave empty to keep current image</small>
             </div>
 
             <div class="form-group mb-3">
-                <input type="submit" value="Save" class="btn btn-primary" />
-                <a asp-action="Index" class="btn btn-secondary">Back to List</a>
+                <div class="form-check">
+                    <input type="checkbox" name="deleteImage" class="form-check-input" id="deleteImage" value="true" />
+                    <label class="form-check-label text-danger" for="deleteImage">
+                        <i class="bi bi-trash"></i> Delete current image
+                    </label>
+                </div>
+            </div>
+
+            <div class="form-group mb-3">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-save"></i> Save
+                </button>
+                <a asp-action="Index" class="btn btn-secondary">
+                    <i class="bi bi-arrow-left"></i> Back to List
+                </a>
             </div>
         </form>
     </div>
@@ -67,7 +86,10 @@
                 }
                 else
                 {
-                    <img src="https://placehold.co/600x400/8b5cf6/white?text=No+Image" alt="No Image" class="img-fluid rounded" style="max-height: 200px;" />
+                    <div class="text-muted">
+                        <i class="bi bi-image" style="font-size: 50px;"></i>
+                        <p>No image available</p>
+                    </div>
                 }
             </div>
         </div>

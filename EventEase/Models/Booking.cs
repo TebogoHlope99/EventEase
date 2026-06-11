@@ -22,6 +22,7 @@ namespace EventEase.Models
         public DateTime BookingDate { get; set; }
 
         [DataType(DataType.DateTime)]
+        [Display(Name = "Created Date")]
         public DateTime CreatedAt { get; set; } = DateTime.Now;
 
         // Navigation properties

@@ -1,0 +1,122 @@
+﻿@model EventEase.Models.EventType
+
+@{
+    ViewData["Title"] = "Create Event Type";
+}
+
+<div class="container mt-4">
+    <h1><i class="bi bi-plus-circle"></i> Create Event Type</h1>
+    <hr />
+
+    <div class="row">
+        <div class="col-md-6">
+            <form asp-action="Create">
+                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+                <div class="form-group mb-3">
+                    <label asp-for="TypeName" class="control-label"></label>
+                    <input asp-for="TypeName" class="form-control" placeholder="e.g., Conference, Wedding, Concert" />
+                    <span asp-validation-for="TypeName" class="text-danger"></span>
+                    <small class="form-text text-muted">Enter a unique name for the event type.</small>
+                </div>
+
+                <div class="form-group mb-3">
+                    <label asp-for="Description" class="control-label"></label>
+                    <textarea asp-for="Description" class="form-control" rows="3" placeholder="Describe this event type..."></textarea>
+                    <span asp-validation-for="Description" class="text-danger"></span>
+                </div>
+
+                <div class="form-group mb-3">
+                    <label asp-for="IconClass" class="control-label">Icon Class</label>
+                    <select asp-for="IconClass" class="form-control">
+                        <option value="bi-calendar-event">📅 Calendar Event</option>
+                        <option value="bi-people-fill">👥 People</option>
+                        <option value="bi-heart-fill">❤️ Heart</option>
+                        <option value="bi-music-note-beamed">🎵 Music</option>
+                        <option value="bi-briefcase-fill">💼 Briefcase</option>
+                        <option value="bi-gift-fill">🎁 Gift</option>
+                        <option value="bi-mortarboard-fill">🎓 Mortarboard</option>
+                        <option value="bi-star-fill">⭐ Star</option>
+                        <option value="bi-trophy-fill">🏆 Trophy</option>
+                        <option value="bi-chat-dots-fill">💬 Chat</option>
+                    </select>
+                    <span asp-validation-for="IconClass" class="text-danger"></span>
+                    <small class="form-text text-muted">Select an icon for this event type (Bootstrap Icons).</small>
+                </div>
+
+                <div class="form-group mb-3">
+                    <label asp-for="ColorClass" class="control-label">Color Class</label>
+                    <select asp-for="ColorClass" class="form-control">
+                        <option value="primary">🔵 Primary (Blue)</option>
+                        <option value="secondary">⚪ Secondary (Gray)</option>
+                        <option value="success">🟢 Success (Green)</option>
+                        <option value="danger">🔴 Danger (Red)</option>
+                        <option value="warning">🟡 Warning (Yellow)</option>
+                        <option value="info">🔵 Info (Light Blue)</option>
+                        <option value="dark">⚫ Dark (Black)</option>
+                    </select>
+                    <span asp-validation-for="ColorClass" class="text-danger"></span>
+                    <small class="form-text text-muted">Select a color for the badge.</small>
+                </div>
+
+                <div class="form-group mb-3">
+                    <div class="form-check">
+                        <input class="form-check-input" asp-for="IsActive" />
+                        <label class="form-check-label" asp-for="IsActive">
+                            Active
+                        </label>
+                    </div>
+                    <span asp-validation-for="IsActive" class="text-danger"></span>
+                    <small class="form-text text-muted">Inactive types won't appear in dropdowns.</small>
+                </div>
+
+                <div class="form-group mb-3">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-save"></i> Create
+                    </button>
+                    <a asp-action="Index" class="btn btn-secondary">
+                        <i class="bi bi-arrow-left"></i> Back to List
+                    </a>
+                </div>
+            </form>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Preview</h5>
+                </div>
+                <div class="card-body text-center">
+                    <div id="preview" class="p-4 border rounded">
+                        <i id="previewIcon" class="bi bi-calendar-event fs-1"></i>
+                        <h3 id="previewName" class="mt-2">Event Type Name</h3>
+                        <span id="previewBadge" class="badge bg-primary">Preview Badge</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+
+    <script>
+        $(document).ready(function() {
+            function updatePreview() {
+                var name = $('#TypeName').val() || 'Event Type Name';
+                var iconClass = $('#IconClass').val() || 'bi-calendar-event';
+                var colorClass = $('#ColorClass').val() || 'primary';
+
+                $('#previewName').text(name);
+                $('#previewIcon').attr('class', 'bi ' + iconClass + ' fs-1');
+                $('#previewBadge').attr('class', 'badge bg-' + colorClass).text(colorClass.toUpperCase());
+            }
+
+            $('#TypeName, #IconClass, #ColorClass').on('keyup change', updatePreview);
+            updatePreview();
+        });
+    </script>
+}
